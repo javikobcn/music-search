@@ -1,0 +1,45 @@
+services:
+
+  music-search:
+    image: ghcr.io/javikobcn/music-search:latest
+    container_name: music-search
+    restart: unless-stopped
+
+    environment:
+      SLSKD_URL: ${SLSKD_URL}
+      SLSKD_USERNAME: ${SLSKD_USERNAME}
+      SLSKD_PASSWORD: ${SLSKD_PASSWORD}
+      TZ: ${TZ}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALLOWED_USER_ID: ${TELEGRAM_ALLOWED_USER_ID}
+      SLSKD_WEBHOOK_TOKEN: ${SLSKD_WEBHOOK_TOKEN}
+
+    volumes:
+      - /volume2/docker/music-search/app/data:/app/data
+      - /volume2/data/media/musica/slskd:/downloads
+      - /volume2/data/media/musica:/library:ro
+      - /volume2/data/media/musica/PLAYLISTS:/library/PLAYLISTS
+
+    ports:
+      - "8086:8080"
+
+
+  telegram-bot:
+    image: ghcr.io/javikobcn/music-search:latest
+    container_name: music-search-bot
+    restart: unless-stopped
+
+    command:
+      - python
+      - -m
+      - app.telegram_bot
+
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      MUSIC_SEARCH_URL: http://music-search:8080
+      TELEGRAM_ALLOWED_USER_ID: ${TELEGRAM_ALLOWED_USER_ID}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      TZ: ${TZ}
+
+    depends_on:
+      - music-search

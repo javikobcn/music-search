@@ -1,0 +1,5 @@
+import os
+
+SLSKD_URL = os.getenv("SLSKD_URL")
+SLSKD_USERNAME = os.getenv("SLSKD_USERNAME")
+SLSKD_PASSWORD = os.getenv("SLSKD_PASSWORD")
