@@ -63,6 +63,7 @@ def worker():
                         track=job.track,
                         album=job.album,
                         excluded_sources=job.failed_sources,
+                        quality_mode=job.quality_mode,
                     )
 
                     if job.status == "cancelled":

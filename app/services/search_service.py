@@ -18,11 +18,13 @@ def _search_cache_key(
     artist,
     track,
     album=None,
+    quality_mode="best",
 ):
     return (
         (artist or "").casefold().strip(),
         (track or "").casefold().strip(),
         (album or "").casefold().strip(),
+        quality_mode,
     )
 
 
@@ -49,11 +51,13 @@ def _get_cached_shortlist(
     artist,
     track,
     album=None,
+    quality_mode="best",
 ):
     key = _search_cache_key(
         artist,
         track,
         album,
+        quality_mode,
     )
 
     now = time.monotonic()
@@ -92,6 +96,7 @@ def _store_cached_shortlist(
     track,
     album,
     shortlist,
+    quality_mode="best",
 ):
     if not shortlist:
         return
@@ -100,6 +105,7 @@ def _store_cached_shortlist(
         artist,
         track,
         album,
+        quality_mode,
     )
 
     now = time.monotonic()
@@ -209,12 +215,25 @@ def _build_candidate_shortlist(
     return shortlist
 
 
+def _quality_results(results, quality_mode):
+    if quality_mode == "best":
+        return results
+    return [
+        result for result in results
+        if (result.extension or "").casefold().lstrip(".") == "mp3"
+        and result.bitRate == 320
+    ]
+
+
 def search_best(
     artist,
     track,
     album=None,
     excluded_sources=None,
+    quality_mode="best",
 ):
+    if quality_mode not in ("best", "mp3_320"):
+        raise ValueError("Invalid quality_mode")
     excluded_sources = set(
         excluded_sources or []
     )
@@ -229,6 +248,7 @@ def search_best(
                 artist,
                 track,
                 album,
+                quality_mode,
             )
         )
 
@@ -288,7 +308,7 @@ def search_best(
 
     shortlist = (
         _build_candidate_shortlist(
-            results,
+            _quality_results(results, quality_mode),
             artist=artist,
             track=track,
             album=album,
@@ -333,7 +353,7 @@ def search_best(
 
         shortlist = (
             _build_candidate_shortlist(
-                results,
+                _quality_results(results, quality_mode),
                 artist=artist,
                 track=track,
                 album=album,
@@ -350,6 +370,7 @@ def search_best(
             track=track,
             album=album,
             shortlist=shortlist,
+            quality_mode=quality_mode,
         )
 
         best = shortlist[0]
@@ -371,12 +392,13 @@ def search_best(
 
     return best
 
-def search_and_download(artist, track, album=None):
+def search_and_download(artist, track, album=None, quality_mode="best"):
 
     best = search_best(
         artist,
         track,
         album,
+        quality_mode=quality_mode,
     )
 
     if best is None:

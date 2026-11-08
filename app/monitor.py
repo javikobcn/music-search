@@ -215,7 +215,7 @@ def move_single_download(
 ) -> Path:
     extension = local_file.suffix.casefold()
 
-    if extension == ".flac":
+    if extension in (".flac", ".wav", ".alac", ".aiff"):
         destination_dir = LOSSLESS_ROOT
 
     elif extension == ".mp3":
@@ -369,10 +369,10 @@ def classify_playlist_folder(
         if path.is_file()
     ]
 
-    flac_count = sum(
+    lossless_count = sum(
         1
         for path in files
-        if path.suffix.casefold() == ".flac"
+        if path.suffix.casefold() in (".flac", ".wav", ".alac", ".aiff")
     )
 
     mp3_count = sum(
@@ -381,22 +381,22 @@ def classify_playlist_folder(
         if path.suffix.casefold() == ".mp3"
     )
 
-    total = flac_count + mp3_count
+    total = lossless_count + mp3_count
 
     if total == 0:
-        return "normal", flac_count, mp3_count, total
+        return "normal", lossless_count, mp3_count, total
 
-    flac_ratio = flac_count / total
+    lossless_ratio = lossless_count / total
 
     destination_type = (
         "lossless"
-        if flac_ratio > 0.5
+        if lossless_ratio > 0.5
         else "normal"
     )
 
     return (
         destination_type,
-        flac_count,
+        lossless_count,
         mp3_count,
         total,
     )
@@ -457,6 +457,8 @@ def update_playlist_m3u(
                         ".flac",
                         ".mp3",
                         ".wav",
+                        ".alac",
+                        ".aiff",
                         ".m4a",
                         ".aac",
                         ".ogg",
@@ -543,7 +545,7 @@ def finalize_playlist_folder(
 
     (
         destination_type,
-        flac_count,
+        lossless_count,
         mp3_count,
         total,
     ) = classify_playlist_folder(
@@ -715,7 +717,7 @@ def finalize_playlist_folder(
     print(
         f"[PLAYLIST FINALIZE] "
         f"playlist={playlist!r} | "
-        f"flac={flac_count} | "
+        f"lossless={lossless_count} | "
         f"mp3={mp3_count} | "
         f"total={total} | "
         f"destination={str(destination_dir)!r}",

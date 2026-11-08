@@ -240,6 +240,7 @@ def find_existing(
     artist: str,
     track: str | None,
     album: str | None = None,
+    quality_mode: str = "best",
 ) -> DownloadJob | None:
 
     if not artist or not track:
@@ -252,6 +253,9 @@ def find_existing(
     matches = []
 
     for job in _downloads:
+
+        if job.quality_mode != quality_mode:
+            continue
 
         if normalize_text(job.artist) != target_artist:
             continue

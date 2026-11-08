@@ -23,6 +23,8 @@ AUDIO_EXTENSIONS = {
     ".flac",
     ".mp3",
     ".wav",
+    ".alac",
+    ".aiff",
     ".m4a",
     ".aac",
     ".ogg",
@@ -542,6 +544,8 @@ def get_audio_directory_stats(
     track_count = 0
     duration_seconds = 0
     duration_known = 0
+    size_bytes = 0
+    size_known = 0
 
     for path in directory.iterdir():
         if (

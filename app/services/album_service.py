@@ -16,6 +16,7 @@ _album_tasks_lock = RLock()
 def start_album_download(
     artist: str,
     album: str,
+    quality_mode: str = "best",
 ):
     task_id = str(
         uuid4()
@@ -39,6 +40,7 @@ def start_album_download(
             task_id,
             artist,
             album,
+            quality_mode,
         ),
         daemon=True,
         name=f"album-{task_id[:8]}",
@@ -58,6 +60,7 @@ def _run_album_download(
     task_id: str,
     artist: str,
     album: str,
+    quality_mode: str = "best",
 ):
     try:
         tracks = get_album_tracks(
@@ -102,6 +105,7 @@ def _run_album_download(
                     artist=artist,
                     track=track,
                     album=album,
+                    quality_mode=quality_mode,
                 )
 
             except Exception as exc:
@@ -391,6 +395,7 @@ def get_album_download_task(
 def get_album(
     artist: str,
     album: str,
+    quality_mode: str = "best",
 ):
     tracks = get_album_tracks(
         artist,
@@ -416,6 +421,7 @@ def get_album(
             artist=artist,
             track=track,
             album=album,
+            quality_mode=quality_mode,
         )
 
         results.append(

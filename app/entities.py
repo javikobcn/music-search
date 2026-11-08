@@ -52,6 +52,8 @@ class DownloadJob:
     album: str | None = None
     playlist: str | None = None
 
+    quality_mode: str = "best"
+
     # Fuente (Soulseek)
     username: str = ""
     filename: str = ""
@@ -87,6 +89,7 @@ class DownloadJob:
             "track": self.track,
             "album": self.album,
             "playlist": self.playlist,
+            "quality_mode": self.quality_mode,
             "filename": self.filename,
             "size": self.size,
             "status": self.status,
@@ -121,6 +124,7 @@ class DownloadJob:
             track=data["track"],
             album=data.get("album"),
             playlist=data.get("playlist"),
+            quality_mode=data.get("quality_mode", "best"),
             status=data["status"],
             progress=data.get("progress", 0),
             downloaded=data.get("downloaded", 0),

@@ -113,6 +113,7 @@ def search_download_album(request: AlbumRequest):
     return get_album(
         artist=request.artist,
         album=request.album,
+        quality_mode=request.quality_mode,
     )
 
 @app.post("/album-download-tasks")
@@ -122,6 +123,7 @@ def start_album_download_endpoint(
     return start_album_download(
         artist=request.artist,
         album=request.album,
+        quality_mode=request.quality_mode,
     )
 
 
@@ -146,6 +148,7 @@ def search_and_download(request: SearchRequest):
         artist=request.artist,
         track=request.track,
         album=request.album,
+        quality_mode=request.quality_mode,
         playlist=request.playlist,
     )
 
@@ -188,6 +191,7 @@ def test_album(request: AlbumRequest):
     return get_album(
         artist=request.artist,
         album=request.album,
+        quality_mode=request.quality_mode,
     )
 
 @app.post("/resolve-track")

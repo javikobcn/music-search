@@ -60,6 +60,8 @@ AUDIO_EXTENSIONS = (
     ".flac",
     ".mp3",
     ".wav",
+    ".alac",
+    ".aiff",
     ".m4a",
     ".aac",
     ".ogg",
@@ -732,6 +734,7 @@ async def handle_exploratory_search(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     text: str,
+    quality_mode="best",
 ):
     message = await update.message.reply_text(
         f"🔎 Buscando coincidencias para "
@@ -777,6 +780,9 @@ async def handle_exploratory_search(
         )
         return
 
+    for item in tracks + artists:
+        item["quality_mode"] = quality_mode
+
     context.user_data[
         "explore_tracks"
     ] = tracks
@@ -794,6 +800,48 @@ async def handle_exploratory_search(
         context,
         page=0,
     )
+
+async def ask_search_quality(update, context, kind):
+    token = secrets.token_hex(8)
+    # A newer request replaces an unanswered prompt; buttons are single-use.
+    context.user_data["pending_search_quality"] = {
+        "token": token, "kind": kind, "update": update,
+        "args": list(context.args or []),
+    }
+    await update.message.reply_text(
+        "🎧 ¿Qué formato prefieres?",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🎵 MP3 320 kbps",
+                                  callback_data=f"quality:{token}:mp3_320")],
+            [InlineKeyboardButton("💎 Mejor calidad disponible",
+                                  callback_data=f"quality:{token}:best")],
+        ]),
+    )
+
+
+async def search_quality_callback(update, context):
+    query = update.callback_query
+    _, token, quality_mode = query.data.split(":")
+    pending = context.user_data.get("pending_search_quality")
+    if (not pending or pending["token"] != token
+            or quality_mode not in ("mp3_320", "best")):
+        await query.answer("Esta búsqueda ha caducado.")
+        return
+    context.user_data.pop("pending_search_quality")
+    await query.answer()
+    await query.edit_message_text(
+        "🎵 MP3 320 kbps" if quality_mode == "mp3_320"
+        else "💎 Mejor calidad disponible"
+    )
+    runners = {"text": run_text_search, "album": run_album_search,
+               "m3u": run_m3u_search}
+    previous_args = context.args
+    context.args = pending["args"]
+    try:
+        await runners[pending["kind"]](pending["update"], context, quality_mode)
+    finally:
+        context.args = previous_args
+
 
 async def handle_text(
     update: Update,
@@ -1111,9 +1159,15 @@ async def handle_text(
 
         return    
 
+    await ask_search_quality(update, context, "text")
+
+
+async def run_text_search(update, context, quality_mode):
+    text = update.message.text.strip()
     playlist_id = extract_youtube_playlist_id(text)
 
     if playlist_id:
+        context.user_data["youtube_quality_mode"] = quality_mode
         message = await update.message.reply_text(
             "🔎 Leyendo playlist de YouTube..."
         )
@@ -1195,6 +1249,7 @@ async def handle_text(
     )
 
     if spotify_match:
+        context.user_data["spotify_quality_mode"] = quality_mode
         await handle_spotify_playlist(
             update,
             context,
@@ -1224,6 +1279,7 @@ async def handle_text(
             update,
             context,
             text,
+            quality_mode=quality_mode,
         )
         return
 
@@ -1257,6 +1313,7 @@ async def handle_text(
             {
                 "artist": artist,
                 "track": track,
+                "quality_mode": quality_mode,
             },
             timeout=180,
             retries=1,
@@ -1533,6 +1590,7 @@ async def spotify_download_callback(
         playlist=playlist_name,
         ask_final_name=True,
         user_data=context.user_data,
+        quality_mode=context.user_data.get("spotify_quality_mode", "best"),
     )
 )       
 
@@ -1633,7 +1691,7 @@ async def watch_job(
             else:
                 size_text = "Desconocido"                
 
-            if extension == "FLAC":
+            if extension in ("FLAC", "WAV", "ALAC", "AIFF"):
                 destination = "lossless"
             elif extension == "MP3":
                 destination = "normal"
@@ -1804,6 +1862,12 @@ async def album_command(
         )
         return
 
+    await ask_search_quality(update, context, "album")
+
+
+async def run_album_search(update, context, quality_mode):
+    artist_query = " ".join(context.args).strip()
+    context.user_data["album_quality_mode"] = quality_mode
     message = await update.message.reply_text(
         f"🔎 Buscando álbumes de {artist_query}..."
     )
@@ -2243,6 +2307,7 @@ async def process_album_download(
     album: str,
     user_data=None,
     status_message_id: int | None = None,
+    quality_mode: str = "best",
 ):
     started_at = datetime.now()
 
@@ -2256,6 +2321,7 @@ async def process_album_download(
             {
                 "artist": artist,
                 "album": album,
+                "quality_mode": quality_mode,
             },
             timeout=30,
             retries=1,
@@ -2644,6 +2710,7 @@ async def album_download_callback(
             artist=artist,
             album=album,
             user_data=context.user_data,
+        quality_mode=context.user_data.get("album_quality_mode", "best"),
             status_message_id=(
                 query.message.message_id
             ),
@@ -2849,7 +2916,7 @@ def album_playlist_quality_name(
     playlist_name: str,
     local_paths: list[str],
 ) -> str:
-    flac_count = 0
+    lossless_count = 0
     mp3_count = 0
 
     for local_path in local_paths:
@@ -2859,14 +2926,14 @@ def album_playlist_quality_name(
             .casefold()
         )
 
-        if normalized.endswith(".flac"):
-            flac_count += 1
+        if normalized.endswith((".flac", ".wav", ".alac", ".aiff")):
+            lossless_count += 1
 
         elif normalized.endswith(".mp3"):
             mp3_count += 1
 
     total = (
-        flac_count
+        lossless_count
         + mp3_count
     )
 
@@ -2874,7 +2941,7 @@ def album_playlist_quality_name(
         return playlist_name
 
     is_lossless = (
-        flac_count / total
+        lossless_count / total
         > 0.5
     )
 
@@ -3641,6 +3708,7 @@ async def analyze_youtube_playlist(
     chat_id: int,
     items: list[dict],
     user_data: dict,
+    quality_mode: str = "best",
 ):
     resolved_tracks = []
     unresolved_tracks = []
@@ -3681,6 +3749,7 @@ async def analyze_youtube_playlist(
         total_tracks=total,
         ask_final_name=True,
         user_data=user_data,
+        quality_mode=quality_mode,
     )
 )
 
@@ -4023,6 +4092,7 @@ async def youtube_analyze_callback(
             chat_id=update.effective_chat.id,
             items=items,
             user_data=context.user_data,
+        quality_mode=context.user_data.get("youtube_quality_mode", "best"),
         )
     )
 
@@ -4066,6 +4136,7 @@ async def youtube_download_callback(
         playlist=playlist_title,
         ask_final_name=True,
         user_data=context.user_data,
+        quality_mode=context.user_data.get("youtube_quality_mode", "best"),
     )
 )
 
@@ -4078,6 +4149,7 @@ async def process_playlist_download(
     total_tracks=None,
     ask_final_name: bool = False,
     user_data=None,
+    quality_mode: str = "best",
 ):
     started_at = datetime.now()
 
@@ -4184,6 +4256,7 @@ async def process_playlist_download(
                         "artist": artist,
                         "track": track,
                         "playlist": playlist,
+                        "quality_mode": quality_mode,
                     },
                     timeout=180,
                     retries=1,
@@ -5164,6 +5237,7 @@ async def download_selected_track(
             {
                 "artist": artist,
                 "track": track,
+                "quality_mode": selected.get("quality_mode", "best"),
             },
             timeout=180,
             retries=1,
@@ -5653,6 +5727,9 @@ async def explore_artist_callback(
         )
         return
 
+    for item in tracks:
+        item["quality_mode"] = artist.get("quality_mode", "best")
+
     context.user_data[
         "artist_explore_tracks"
     ] = tracks
@@ -5769,6 +5846,11 @@ async def m3u_playlist_handler(
     if not message or not message.document:
         return
 
+    await ask_search_quality(update, context, "m3u")
+
+
+async def run_m3u_search(update, context, quality_mode):
+    message = update.message
     document = message.document
 
     filename = (
@@ -5851,6 +5933,7 @@ async def m3u_playlist_handler(
                 playlist=playlist_name,
                 ask_final_name=True,
                 user_data=context.user_data,
+                quality_mode=quality_mode,
             )
         )
 
@@ -7022,6 +7105,10 @@ def main():
         ),
         group=-100,
     )    
+
+    app.add_handler(CallbackQueryHandler(
+        search_quality_callback, pattern=r"^quality:[a-f0-9]{16}:(?:mp3_320|best)$",
+    ))
 
     app.add_handler(
         CommandHandler(

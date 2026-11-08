@@ -316,6 +316,7 @@ def get_track(
     track: str,
     album: str | None = None,
     playlist: str | None = None,
+    quality_mode: str = "best",
 ):
 
     print(
@@ -336,6 +337,7 @@ def get_track(
         artist=artist,
         track=track,
         album=album,
+        quality_mode=quality_mode,
     )
 
     # ---------------------------------------------------------
@@ -564,6 +566,7 @@ def get_track(
         artist=artist,
         track=track,
         album=album,
+        quality_mode=quality_mode,
     )
 
     if best is None:
@@ -587,6 +590,7 @@ def get_track(
         artist=artist,
         track=track,
         album=album,
+        quality_mode=quality_mode,
         playlist=playlist,
         extension=best.extension,
         length=best.length,

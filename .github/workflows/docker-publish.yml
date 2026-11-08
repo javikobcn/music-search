@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -22,18 +28,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Build image for verification
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: music-search:test
+
+      - name: Test the image before publication
+        run: |
+          docker run --rm --network none \
+            --volume "$PWD/tests:/tests:ro" \
+            music-search:test \
+            python -m unittest discover -s /tests -v
+
       - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/javikobcn/music-search:latest
-            ghcr.io/javikobcn/music-search:${{ github.sha }}
+      - name: Publish the tested image as latest and revision
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          IMAGE="$REGISTRY/$IMAGE_NAME"
+          docker tag music-search:test "$IMAGE:$REVISION"
+          docker tag music-search:test "$IMAGE:latest"
+          docker push "$IMAGE:$REVISION"
+          docker push "$IMAGE:latest"

@@ -1,7 +1,9 @@
 from pydantic import BaseModel
+from typing import Literal
 
 
 class SearchRequest(BaseModel):
+    quality_mode: Literal["best", "mp3_320"] = "best"
     query: str | None = None
     artist: str | None = None
     track: str | None = None
@@ -20,6 +22,7 @@ class DownloadRequest(BaseModel):
     size: int
 
 class AlbumRequest(BaseModel):
+    quality_mode: Literal["best", "mp3_320"] = "best"
     artist: str
     album: str
 
