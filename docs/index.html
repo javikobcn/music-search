@@ -75,6 +75,15 @@ footer { padding-block: 1.3rem; color: var(--muted); border-top: 1px solid var(-
   pre, tr { break-inside: avoid; }
   h2, h3 { break-after: avoid; }
 }
+
+.tutorial { margin-bottom: 2.5rem; }
+.tutorial h2 { margin-bottom: .6rem; }
+.tutorial summary { width: fit-content; cursor: pointer; color: var(--accent); font-weight: 700; }
+.tutorial summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.tutorial details[open] .show-tutorial, .tutorial details:not([open]) .hide-tutorial { display: none; }
+.tutorial figure { width: min(100%, 26rem); margin: 1rem auto 0; }
+.tutorial img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: .7rem; }
+.tutorial figcaption { margin-top: .5rem; text-align: center; font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -84,7 +93,19 @@ footer { padding-block: 1.3rem; color: var(--muted); border-top: 1px solid var(-
 <p class="subtitle">Búsquedas, descargas, playlists y organización de la biblioteca.</p>
 </div></header>
 <main class="wrap">
-<nav aria-label="Contenido"><ul><li><a href="#grupo-1">Buscar y descargar</a></li><li><a href="#grupo-2">Crear e importar playlists</a></li><li><a href="#grupo-3">Resultados y biblioteca</a></li></ul></nav>
+<nav aria-label="Contenido"><ul><li><a href="#tutorial">Tutorial visual</a></li><li><a href="#grupo-1">Buscar y descargar</a></li><li><a href="#grupo-2">Crear e importar playlists</a></li><li><a href="#grupo-3">Resultados y biblioteca</a></li></ul></nav>
+
+<section id="tutorial" class="topic tutorial" aria-labelledby="tutorial-title">
+  <h2 id="tutorial-title">Tutorial visual</h2>
+  <p>Busca música, consulta álbumes e importa una playlist de YouTube o un archivo <code>.m3u</code> desde el chat del bot.</p>
+  <details>
+    <summary><span class="show-tutorial">Ver tutorial (GIF de 27 segundos)</span><span class="hide-tutorial">Ocultar tutorial</span></summary>
+    <figure>
+      <img src="music-assistant-tutorial.gif" width="480" height="1054" loading="lazy" alt="Tutorial en Telegram. Busca un artista y selecciona una canción, consulta álbumes con /album, analiza una playlist de YouTube y reenvía un archivo .m3u desde el chat del bot.">
+      <figcaption><a href="music-assistant-tutorial.gif" download>Descargar el GIF</a></figcaption>
+    </figure>
+  </details>
+</section>
 <section id="grupo-1" class="group" aria-labelledby="group-title-1"><h2 id="group-title-1">Buscar y descargar</h2><div class="grid"><div class="column full"><section id="busqueda" class="topic" aria-labelledby="title-0">
 <div class="topic-head"><h3 id="title-0"><span class="index" aria-hidden="true">01</span>Búsqueda de música</h3></div>
 <table aria-labelledby="title-0"><thead><tr><th scope="col">Qué quieres hacer</th><th scope="col">Qué escribes / envías</th><th scope="col">Qué hace el bot</th></tr></thead><tbody>
