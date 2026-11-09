@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Chuleta de uso del bot de Telegram de music-search.">
+<title>Chuleta del bot de Telegram | music-search</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #192936;
+  --muted: #476172;
+  --accent: #155653;
+  --line: #cedce0;
+  --paper: #fff;
+  --canvas: #f2f6f7;
+  --sample: #edf5f5;
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--canvas); font: 1rem/1.6 system-ui, sans-serif; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.wrap { width: min(100% - 2rem, 68rem); margin-inline: auto; }
+.hero { background: #e1efee; border-top: .45rem solid var(--accent); border-bottom: 1px solid var(--line); padding-block: clamp(2rem, 7vw, 4rem); }
+.eyebrow, .index, .status { font-size: .78rem; font-weight: 750; letter-spacing: .045em; }
+.eyebrow { color: var(--accent); margin: 0; }
+h1, h2, h3 { line-height: 1.15; letter-spacing: -.025em; }
+h1 { margin: .55rem 0; font-size: clamp(2rem, 6vw, 3.65rem); }
+.subtitle { margin: 0; color: var(--muted); }
+nav { margin-block: 1.5rem 2.25rem; }
+nav ul { display: flex; flex-wrap: wrap; gap: .45rem 1.1rem; padding: 0; margin: 0; list-style: none; }
+.group { margin-block: 0 2.5rem; }
+h2 { margin: 0 0 1rem; font-size: clamp(1.45rem, 4vw, 2rem); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.column { min-width: 0; display: grid; gap: 1rem; }
+.full { grid-column: 1 / -1; }
+.topic { min-width: 0; padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--line); border-radius: .7rem; background: var(--paper); scroll-margin-top: 1rem; }
+.topic-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .45rem .8rem; }
+h3 { margin: 0; font-size: clamp(1.15rem, 3vw, 1.4rem); }
+.index { display: inline-block; margin-right: .65rem; color: var(--accent); }
+.status { color: #674710; background: #fff1d3; padding: .2rem .6rem; border-radius: .25rem; }
+p { margin: .7rem 0; }
+.topic > :last-child { margin-bottom: 0; }
+code { font-family: ui-monospace, Consolas, monospace; font-size: .91em; overflow-wrap: anywhere; }
+p code, td code { padding: .1em .25em; background: var(--sample); color: var(--accent); border-radius: .2em; }
+pre { margin: .65rem 0; padding: .75rem .9rem; background: var(--sample); border-left: 3px solid #75a6a2; border-radius: .25rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .95rem; line-height: 1.48; }
+.note { padding: .65rem .8rem; color: #583d0e; background: #fff5df; border-left: 3px solid #b58937; border-radius: .25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 1rem; }
+th, td { vertical-align: top; padding: .6rem .7rem; border-bottom: 1px solid var(--line); }
+thead th { background: var(--sample); color: var(--accent); }
+tbody th { font-weight: 650; }
+tbody tr:last-child > * { border-bottom: 0; }
+.mobile-label { display: none; }
+.examples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.examples pre { margin-bottom: 0; }
+footer { padding-block: 1.3rem; color: var(--muted); border-top: 1px solid var(--line); font-size: .9rem; }
+@media (max-width: 48rem) {
+  .grid, .examples { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 36rem) {
+  .wrap { width: calc(100% - 1.25rem); }
+  table, tbody, tr, tbody th, td { display: block; }
+  thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  tbody tr { padding: .65rem 0; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child { border: 0; padding-bottom: 0; }
+  tbody th, td { padding: .2rem 0; border: 0; }
+  .mobile-label { display: block; color: var(--muted); font-weight: 650; font-size: .78rem; }
+}
+@media print {
+  body { background: white; }
+  .hero, .topic, pre, .note { print-color-adjust: exact; }
+  .hero { padding-block: 1rem; }
+  .grid, .column { display: block; }
+  .topic { margin-bottom: .75rem; }
+  pre, tr { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+<p class="eyebrow">MUSIC-SEARCH</p>
+<h1>Chuleta del bot de Telegram</h1>
+<p class="subtitle">Búsquedas, descargas, playlists y organización de la biblioteca.</p>
+</div></header>
+<main class="wrap">
+<nav aria-label="Contenido"><ul><li><a href="#grupo-1">Buscar y descargar</a></li><li><a href="#grupo-2">Crear e importar playlists</a></li><li><a href="#grupo-3">Resultados y biblioteca</a></li></ul></nav>
+<section id="grupo-1" class="group" aria-labelledby="group-title-1"><h2 id="group-title-1">Buscar y descargar</h2><div class="grid"><div class="column full"><section id="busqueda" class="topic" aria-labelledby="title-0">
+<div class="topic-head"><h3 id="title-0"><span class="index" aria-hidden="true">01</span>Búsqueda de música</h3></div>
+<table aria-labelledby="title-0"><thead><tr><th scope="col">Qué quieres hacer</th><th scope="col">Qué escribes / envías</th><th scope="col">Qué hace el bot</th></tr></thead><tbody>
+<tr>
+<th scope="row">Buscar una canción</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span><code>Jamiroquai - Seven Days in Sunny June</code></td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Busca la canción, muestra resultados y permite descargarla</td>
+</tr>
+<tr>
+<th scope="row">Buscar canción en orden inverso</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span><code>Seven Days in Sunny June - Jamiroquai</code></td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Intenta resolver igualmente artista y canción</td>
+</tr>
+<tr>
+<th scope="row">Explorar una búsqueda ambigua</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span>Texto libre</td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Muestra coincidencias de canciones y artistas para elegir</td>
+</tr>
+<tr>
+<th scope="row">Buscar álbumes de un artista</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span><code>/album Jamiroquai</code></td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Muestra álbumes del artista para seleccionar uno</td>
+</tr>
+<tr>
+<th scope="row">Descargar un álbum</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span>Seleccionas el álbum</td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Busca y descarga todas sus canciones</td>
+</tr>
+<tr>
+<th scope="row">Importar playlist de YouTube</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span>Pegas la URL de la playlist</td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Lee sus canciones, permite analizarla y descargarla</td>
+</tr>
+<tr>
+<th scope="row">Importar playlist de Spotify</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span>Pegas la URL de Spotify</td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Obtiene las canciones y permite descargar la playlist</td>
+</tr>
+<tr>
+<th scope="row">Importar playlist M3U/M3U8</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span>Envías/importas el M3U</td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Procesa sus canciones y las busca/descarga</td>
+</tr>
+<tr>
+<th scope="row">Cancelar una operación</th>
+<td><span class="mobile-label" aria-hidden="true">Qué escribes / envías</span>Botón <code>❌ Cancelar / No</code> cuando aparece</td>
+<td><span class="mobile-label" aria-hidden="true">Qué hace el bot</span>Cancela esa acción sin afectar al resto</td>
+</tr>
+</tbody></table>
+</section></div><div class="column full"><section id="canciones" class="topic" aria-labelledby="title-1">
+<div class="topic-head"><h3 id="title-1"><span class="index" aria-hidden="true">02</span>Cuando descargas una canción</h3></div>
+<div class="examples"><div><p>Si la canción es nueva, el bot muestra un resumen de la descarga.</p>
+<pre><code>✅ Descarga completada
+
+🎵 Canción
+👤 Artista
+💿 FLAC / MP3
+⏱️ Duración
+💾 Tamaño
+📁 Ubicación</code></pre></div><div><p>Si <strong>ya estaba descargada</strong>, muestra además si pertenece a alguna playlist.</p>
+<pre><code>✅ Ya estaba descargada
+
+🎵 Seven Days in Sunny June
+👤 Jamiroquai
+💿 FLAC
+⏱️ 3:58
+💾 Tamaño: 29.2 MB
+📁 lossless
+
+📋 Está incluida en:
+• Cancioncillas que voy encontrando</code></pre></div></div>
+<p>Y después te ofrece añadirla a una playlist.</p>
+</section></div></div></section><section id="grupo-2" class="group" aria-labelledby="group-title-2"><h2 id="group-title-2">Crear e importar playlists</h2><div class="grid"><div class="column"><section id="anadir" class="topic" aria-labelledby="title-2">
+<div class="topic-head"><h3 id="title-2"><span class="index" aria-hidden="true">03</span>Añadir una canción a una playlist</h3></div>
+<p>Después de una descarga o al encontrar una canción que ya tienes, puedes elegir.</p>
+<pre><code>📋 Playlist existente
+➕ Crear nueva playlist
+❌ No</code></pre>
+<p>Si eliges una existente, seleccionas cuál.</p>
+<p>Si eliges crear una nueva, escribes el nombre.</p>
+<p>Antes de modificarla aparece una confirmación.</p>
+<pre><code>⚠️ ¿Estás seguro?
+
+✅ Sí
+❌ No</code></pre>
+<p>Después muestra estadísticas reales.</p>
+<pre><code>🎶 Total: 118 canciones
+⏱ Duración: 7 h 18 min
+💾 Tamaño: 1.82 GB</code></pre>
+</section>
+<section id="albumes" class="topic" aria-labelledby="title-3">
+<div class="topic-head"><h3 id="title-3"><span class="index" aria-hidden="true">04</span>Descarga de álbumes</h3></div>
+<p>Al terminar el álbum, el bot muestra un resumen.</p>
+<pre><code>✅ Álbum completado
+
+💿 Nombre del álbum
+👤 Artista
+
+🎵 12 canciones completadas
+
+⏱ Duración: 52 min
+💾 Tamaño: 1.4 GB</code></pre>
+<p>Si algunas canciones fallan, informa de cuáles no se pudieron completar.</p>
+<p>Después ofrece guardar las canciones completadas.</p>
+<pre><code>¿Quieres guardar las canciones completadas en una playlist?</code></pre>
+<p>Puedes usar un nombre sugerido o escribir otro.</p>
+<pre><code>💿 Artista - Álbum
+👤 Artista
+✏️ Otro nombre
+❌ No</code></pre>
+<p>Antes de crear/actualizar la playlist también pide confirmación.</p>
+</section></div><div class="column"><section id="youtube" class="topic" aria-labelledby="title-4">
+<div class="topic-head"><h3 id="title-4"><span class="index" aria-hidden="true">05</span>Playlists de YouTube</h3></div>
+<p>Pegas una URL de playlist de YouTube.</p>
+<p>El bot muestra el nombre y las canciones encontradas.</p>
+<pre><code>📁 Nombre de playlist
+🎵 Canciones encontradas</code></pre>
+<p>Pulsa el botón para iniciar el análisis.</p>
+<pre><code>🔎 Analizar playlist</code></pre>
+<p>Después procesa cada canción, buscando la mejor coincidencia en Soulseek.</p>
+<p>Al terminar puede pedirte el <strong>nombre final</strong> con el que quieres guardar la playlist.</p>
+</section>
+<section id="spotify" class="topic" aria-labelledby="title-5">
+<div class="topic-head"><h3 id="title-5"><span class="index" aria-hidden="true">06</span>Playlists de Spotify</h3></div>
+<p>Pega una URL de playlist de Spotify como la del ejemplo.</p>
+<pre><code>https://open.spotify.com/playlist/...</code></pre>
+<p>El bot obtiene las canciones de Spotify y después las busca individualmente en Soulseek.</p>
+<p>Puedes iniciar o cancelar la descarga y, al finalizar, elegir el nombre definitivo de la playlist.</p>
+</section>
+<section id="m3u" class="topic" aria-labelledby="title-6">
+<div class="topic-head"><h3 id="title-6"><span class="index" aria-hidden="true">07</span>Playlists M3U / M3U8</h3></div>
+<p>También puedes importar una playlist M3U.</p>
+<p>El nombre del archivo original se utiliza durante el procesamiento, pero después puedes indicar el nombre final que quieres.</p>
+<p>La playlist generada apunta a los archivos reales de tu biblioteca.</p>
+</section></div></div></section><section id="grupo-3" class="group" aria-labelledby="group-title-3"><h2 id="group-title-3">Resultados y biblioteca</h2><div class="grid"><div class="column"><section id="playlists" class="topic" aria-labelledby="title-7">
+<div class="topic-head"><h3 id="title-7"><span class="index" aria-hidden="true">08</span>Playlists descargadas/importadas</h3></div>
+<p>Al finalizar, el bot muestra la ubicación y las estadísticas de la playlist.</p>
+<pre><code>✅ Playlist guardada
+
+📁 Cirrus
+🎵 Cirrus - lossless.m3u
+📍 lossless/playlists/Cirrus
+
+🆕 2 descargadas esta vez
+♻️ 8 ya estaban descargadas
+
+🎶 Total: 10 canciones
+⏱ Duración: 41 min
+💾 Tamaño: 710 MB</code></pre>
+<p>El resumen distingue tres recuentos.</p>
+<pre><code>🆕 descargadas esta vez
+♻️ ya estaban descargadas
+🎶 total real de la playlist</code></pre>
+</section>
+<section id="calidad" class="topic" aria-labelledby="title-8">
+<div class="topic-head"><h3 id="title-8"><span class="index" aria-hidden="true">09</span>Calidad</h3><span class="status">Pendiente de verificar</span></div>
+<p>La propuesta consiste en mostrar esta pregunta <strong>antes de iniciar una búsqueda o descarga</strong>.</p>
+<pre><code>🎧 ¿Qué formato prefieres?
+
+[ 🎵 MP3 320 kbps ]
+[ 💎 Mejor calidad disponible ]</code></pre>
+<p>La idea es que esa elección afecte a toda la operación: una canción individual, todo un álbum o todas las canciones de una playlist.</p>
+<p><code>💎 Mejor calidad disponible</code> priorizaría FLAC o formatos sin pérdida y la mejor fuente disponible.</p>
+<p><code>🎵 MP3 320 kbps</code> buscaría específicamente ese formato y calidad.</p>
+<p class="note">El selector se planteó como mejora. Su funcionamiento en la versión actual del bot queda pendiente de verificar en esta conversación.</p>
+</section></div><div class="column"><section id="reintentos" class="topic" aria-labelledby="title-9">
+<div class="topic-head"><h3 id="title-9"><span class="index" aria-hidden="true">10</span>Fallos y reintentos</h3></div>
+<p>Si una fuente de Soulseek falla, el backend recuerda esa fuente e intenta buscar otra automáticamente.</p>
+<p>Este ejemplo muestra el cambio de fuente.</p>
+<pre><code>Fuente A → falla
+        ↓
+Se excluye Fuente A
+        ↓
+Busca otra fuente
+        ↓
+Fuente B</code></pre>
+<p>Si no existe otra fuente válida, la descarga termina como fallida y Telegram te lo notifica.</p>
+</section>
+<section id="biblioteca" class="topic" aria-labelledby="title-10">
+<div class="topic-head"><h3 id="title-10"><span class="index" aria-hidden="true">11</span>Organización automática</h3></div>
+<p>Carpetas habituales de las canciones individuales.</p>
+<pre><code>lossless/
+normal/</code></pre>
+<p>Carpetas de las playlists finalizadas.</p>
+<pre><code>lossless/playlists/NOMBRE/
+normal/playlists/NOMBRE/</code></pre>
+<p>Una playlist con más del 50 % de FLAC se clasifica como <code>lossless</code>.</p>
+<p>Nombre de archivo para los M3U lossless.</p>
+<pre><code>Nombre - lossless.m3u</code></pre>
+<p>Nombre de archivo para los M3U normales.</p>
+<pre><code>Nombre.m3u</code></pre>
+<p>Además, si añades a una playlist gestionada una canción individual que estaba directamente en <code>lossless/</code> o <code>normal/</code>, el sistema puede moverla físicamente a la carpeta de esa playlist y actualizar sus referencias.</p>
+</section></div></div></section>
+</main>
+<footer><div class="wrap">music-search · Guía de uso del bot de Telegram</div></footer>
+</body>
+</html>
