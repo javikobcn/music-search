@@ -15,10 +15,17 @@ services:
       SLSKD_WEBHOOK_TOKEN: ${SLSKD_WEBHOOK_TOKEN}
 
     volumes:
-      - /volume2/docker/music-search/app/data:/app/data
-      - /volume2/data/media/musica/slskd:/downloads
-      - /volume2/data/media/musica:/library:ro
-      - /volume2/data/media/musica/PLAYLISTS:/library/PLAYLISTS
+      # Datos persistentes de music-search
+      - /PATH/TO/music-search/data:/app/data
+
+      # Carpeta de descargas compartida con slskd
+      - /PATH/TO/slskd/downloads:/downloads
+
+      # Biblioteca musical completa, solo lectura
+      - /PATH/TO/music/library:/library:ro
+
+      # Única zona de la biblioteca con permiso de escritura
+      - /PATH/TO/music/library/PLAYLISTS:/library/PLAYLISTS
 
     ports:
       - "8086:8080"
