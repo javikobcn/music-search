@@ -31,6 +31,7 @@ SPOTIFY_PLAYLIST_RE = re.compile(
 )
 
 YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
+YOUTUBE_PLAYLIST_TIMEOUT = 60
 
 
 logger = logging.getLogger(__name__)
@@ -1164,6 +1165,17 @@ async def handle_text(
 
 async def run_text_search(update, context, quality_mode):
     text = update.message.text.strip()
+    list_id = _playlist_id_from_query(text)
+    if list_id and list_id.startswith("RD"):
+        host = urlparse(text).hostname or ""
+        if host in {"youtube.com", "youtu.be"} or host.endswith(".youtube.com"):
+            await update.message.reply_text(
+                "⚠️ Este enlace es una Mix o Radio automática de YouTube. "
+                "No se puede importar como una playlist normal. "
+                "Envíame el enlace de una playlist normal de YouTube."
+            )
+            return
+
     playlist_id = extract_youtube_playlist_id(text)
 
     if playlist_id:
@@ -1173,9 +1185,22 @@ async def run_text_search(update, context, quality_mode):
         )
 
         try:
-            items = await get_youtube_playlist(
-                playlist_id
-            )
+            try:
+                items = await asyncio.wait_for(
+                    get_youtube_playlist(playlist_id),
+                    timeout=YOUTUBE_PLAYLIST_TIMEOUT,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "[YOUTUBE] Tiempo de espera agotado tras %s s | playlist_id=%s",
+                    YOUTUBE_PLAYLIST_TIMEOUT,
+                    playlist_id,
+                )
+                await message.edit_text(
+                    "⚠️ YouTube ha tardado demasiado en devolver la playlist. "
+                    "Inténtalo de nuevo en unos minutos."
+                )
+                return
 
             if not items:
                 await message.edit_text(
@@ -3475,7 +3500,7 @@ async def handle_spotify_playlist(
     )    
 
 
-def extract_youtube_playlist_id(url: str) -> str | None:
+def _playlist_id_from_query(url: str) -> str | None:
     try:
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
@@ -3488,6 +3513,13 @@ def extract_youtube_playlist_id(url: str) -> str | None:
     except Exception:
         pass
 
+    return None
+
+
+def extract_youtube_playlist_id(url: str) -> str | None:
+    playlist_id = _playlist_id_from_query(url)
+    if playlist_id and not playlist_id.startswith("RD"):
+        return playlist_id
     return None
 
 
