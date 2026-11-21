@@ -1292,11 +1292,12 @@ async def run_text_search(update, context, quality_mode):
     f"message_date={update.message.date.isoformat() if update.message else None}"
     )
 
+    video_id = extract_youtube_video_id(text)
     searching_message = await update.message.reply_text(
-        "🔎 Buscando..."
+        "🔎 Leyendo vídeo de YouTube..." if video_id else "🔎 Buscando..."
     )
 
-    if not re.search(
+    if not video_id and not re.search(
         r"\s+[-–—]\s+",
         text,
     ):
@@ -1309,22 +1310,43 @@ async def run_text_search(update, context, quality_mode):
         return
 
     try:
-        resolved = await api_post(
-            "/resolve-track",
-            {
-                "query": text,
-            },
-        )
+        if video_id:
+            try:
+                snippet = await get_youtube_video_snippet(video_id)
+            except requests.RequestException:
+                logger.warning(
+                    "[YOUTUBE] Error leyendo vídeo | video_id=%s",
+                    video_id,
+                    exc_info=True,
+                )
+                await searching_message.edit_text(
+                    "⚠️ No he podido consultar el vídeo en YouTube."
+                )
+                return
 
-        if resolved.get("status") != "resolved":
+            if not snippet:
+                await searching_message.edit_text(
+                    "⚠️ Ese vídeo no está disponible en YouTube."
+                )
+                return
+
+            artist, track = guess_youtube_track(
+                snippet.get("title", ""),
+                snippet.get("channelTitle", ""),
+            )
+        else:
+            resolved = await api_post("/resolve-track", {"query": text})
+            artist = resolved.get("artist")
+            track = resolved.get("track")
+            if resolved.get("status") != "resolved":
+                artist, track = None, None
+
+        if not artist or not track:
             await searching_message.edit_text(
                 "⚠️ No he podido identificar "
                 "con seguridad la canción."
             )
             return
-
-        artist = resolved["artist"]
-        track = resolved["track"]
 
         await searching_message.edit_text(
             f"🔎 Encontrado:\n"
@@ -3521,6 +3543,45 @@ def extract_youtube_playlist_id(url: str) -> str | None:
     if playlist_id and not playlist_id.startswith("RD"):
         return playlist_id
     return None
+
+
+def extract_youtube_video_id(url: str) -> str | None:
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+    except ValueError:
+        return None
+
+    if parsed.scheme not in {"http", "https"}:
+        return None
+
+    if host in {"youtu.be", "www.youtu.be"}:
+        video_id = parsed.path.strip("/")
+    elif (
+        host == "youtube.com" or host.endswith(".youtube.com")
+    ) and parsed.path == "/watch":
+        video_id = parse_qs(parsed.query).get("v", [""])[0]
+    else:
+        return None
+
+    if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+        return video_id
+    return None
+
+
+async def get_youtube_video_snippet(video_id: str) -> dict | None:
+    def request():
+        response = requests.get(
+            "https://www.googleapis.com/youtube/v3/videos",
+            params={"part": "snippet", "id": video_id},
+            headers={"x-goog-api-key": YOUTUBE_API_KEY},
+            timeout=15,
+        )
+        response.raise_for_status()
+        items = response.json().get("items", [])
+        return items[0]["snippet"] if items else None
+
+    return await asyncio.to_thread(request)
 
 
 async def get_youtube_playlist(playlist_id: str):
