@@ -1,7 +1,10 @@
 import time
 import requests
 
-from app.services.input_service import HEADERS
+from .musicbrainz_client import (
+    musicbrainz_request,
+    RETRYABLE_STATUS,
+)
 
 
 MUSICBRAINZ_BASE_URL = "https://musicbrainz.org/ws/2"
@@ -11,35 +14,23 @@ def musicbrainz_get(
     endpoint: str,
     params: dict,
 ) -> dict | None:
-    for attempt in range(3):
-        response = requests.get(
-            f"{MUSICBRAINZ_BASE_URL}/{endpoint}",
-            params={
-                **params,
-                "fmt": "json",
-            },
-            headers=HEADERS,
-            timeout=15,
-        )
 
-        if response.status_code == 200:
-            return response.json()
+    response = musicbrainz_request(
+        f"{MUSICBRAINZ_BASE_URL}/{endpoint}",
+        params={
+            **params,
+            "fmt": "json",
+        },
+        timeout=15,
+    )
 
-        if response.status_code in (429, 503):
-            wait_seconds = 2 * (attempt + 1)
+    if response.status_code == 200:
+        return response.json()
 
-            print(
-                f"[MUSICBRAINZ SEARCH RETRY] "
-                f"status={response.status_code} | "
-                f"attempt={attempt + 1}/3 | "
-                f"wait={wait_seconds}s",
-                flush=True,
-            )
+    if response.status_code in RETRYABLE_STATUS:
+        return None
 
-            time.sleep(wait_seconds)
-            continue
-
-        response.raise_for_status()
+    response.raise_for_status()
 
     return None
 
@@ -136,8 +127,6 @@ def search_options(
         },
     )
 
-    # Respetamos el ritmo de peticiones de MusicBrainz.
-    time.sleep(1.1)
 
     artists_data = musicbrainz_get(
         "artist",

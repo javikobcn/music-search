@@ -748,8 +748,8 @@ async def handle_exploratory_search(
             {
                 "query": text,
             },
-            timeout=60,
-            retries=3,
+            timeout=150,
+            retries=1,
         )
 
     except Exception:
@@ -1335,7 +1335,14 @@ async def run_text_search(update, context, quality_mode):
                 snippet.get("channelTitle", ""),
             )
         else:
-            resolved = await api_post("/resolve-track", {"query": text})
+            resolved = await api_post(
+                "/resolve-track",
+                {
+                    "query": text,
+                },
+                timeout=90,
+                retries=1,
+            )
             artist = resolved.get("artist")
             track = resolved.get("track")
             if resolved.get("status") != "resolved":
@@ -1925,6 +1932,8 @@ async def run_album_search(update, context, quality_mode):
             {
                 "artist": artist_query,
             },
+            timeout=150,
+            retries=1,
         )
 
         if result.get("status") != "resolved":
@@ -3965,8 +3974,8 @@ async def analyze_youtube_playlist(
                             resolve_query
                         ),
                     },
-                    timeout=30,
-                    retries=3,
+                    timeout=90,
+                    retries=1,
                 )
 
                 logger.warning(
@@ -5795,8 +5804,8 @@ async def explore_artist_callback(
             {
                 "artist_id": artist["id"],
             },
-            timeout=60,
-            retries=3,
+            timeout=150,
+            retries=1,
         )
 
     except Exception:

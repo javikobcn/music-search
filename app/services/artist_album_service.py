@@ -1,22 +1,17 @@
-import requests
+from .musicbrainz_client import musicbrainz_request
 
 
 MUSICBRAINZ_URL = "https://musicbrainz.org/ws/2"
 
-HEADERS = {
-    "User-Agent": "music-search/1.0"
-}
-
 
 def find_artist(artist_name: str):
-    response = requests.get(
+    response = musicbrainz_request(
         f"{MUSICBRAINZ_URL}/artist",
         params={
             "query": f'artist:"{artist_name}"',
             "fmt": "json",
             "limit": 5,
         },
-        headers=HEADERS,
         timeout=15,
     )
 
@@ -43,7 +38,7 @@ def get_artist_albums(artist_name: str):
     artist_id = artist["id"]
     resolved_artist = artist["name"]
 
-    response = requests.get(
+    response = musicbrainz_request(
         f"{MUSICBRAINZ_URL}/release-group",
         params={
             "artist": artist_id,
@@ -52,7 +47,6 @@ def get_artist_albums(artist_name: str):
             "fmt": "json",
             "limit": 100,
         },
-        headers=HEADERS,
         timeout=15,
     )
 

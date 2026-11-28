@@ -7,9 +7,11 @@ from rapidfuzz import fuzz
 
 MUSICBRAINZ_URL = "https://musicbrainz.org/ws/2/recording"
 
-HEADERS = {
-    "User-Agent": "music-search/1.0"
-}
+from .musicbrainz_client import (
+    HEADERS,
+    musicbrainz_request,
+    RETRYABLE_STATUS,
+)
 
 
 def normalize_text(value: str) -> str:
@@ -166,37 +168,20 @@ def resolve_track_query(query: str):
         f'(artistname:"{right_safe}" AND recording:"{left_safe}")'
     )
 
-    response = None
+    response = musicbrainz_request(
+        MUSICBRAINZ_URL,
+        params={
+            "query": search_query,
+            "fmt": "json",
+            "limit": 10,
+        },
+        timeout=15,
+    )
 
-    for attempt in range(3):
-        response = requests.get(
-            MUSICBRAINZ_URL,
-            params={
-                "query": search_query,
-                "fmt": "json",
-                "limit": 10,
-            },
-            headers=HEADERS,
-            timeout=15,
-        )
-
-        if response.status_code == 200:
-            break
-
-        if response.status_code in (429, 503):
-            wait_seconds = 2 * (attempt + 1)
-
-            print(
-                f"[MUSICBRAINZ RETRY] "
-                f"status={response.status_code} | "
-                f"attempt={attempt + 1}/3 | "
-                f"wait={wait_seconds}s",
-                flush=True,
-            )
-
-            time.sleep(wait_seconds)
-            continue
-
+    if (
+        response.status_code != 200
+        and response.status_code not in RETRYABLE_STATUS
+    ):
         response.raise_for_status()
 
     if response is None or response.status_code != 200:

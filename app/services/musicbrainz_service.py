@@ -1,31 +1,32 @@
-import requests
+from .musicbrainz_client import musicbrainz_request
 
 
 BASE_URL = "https://musicbrainz.org/ws/2"
 
-HEADERS = {
-    "User-Agent": "music-search/1.0 (https://github.com/tu-proyecto)"
-}
 
-
-def search_release(artist: str, album: str) -> str | None:
+def search_release(
+    artist: str,
+    album: str,
+) -> str | None:
 
     query = f'artist:"{artist}" AND release:"{album}"'
 
-    response = requests.get(
+    response = musicbrainz_request(
         f"{BASE_URL}/release",
         params={
             "query": query,
             "fmt": "json",
             "limit": 1,
         },
-        headers=HEADERS,
         timeout=10,
     )
 
     response.raise_for_status()
 
-    releases = response.json().get("releases", [])
+    releases = response.json().get(
+        "releases",
+        [],
+    )
 
     if not releases:
         return None
@@ -33,20 +34,25 @@ def search_release(artist: str, album: str) -> str | None:
     return releases[0]["id"]
 
 
-def get_album_tracks(artist: str, album: str):
+def get_album_tracks(
+    artist: str,
+    album: str,
+):
 
-    release_id = search_release(artist, album)
+    release_id = search_release(
+        artist,
+        album,
+    )
 
     if release_id is None:
         return []
 
-    response = requests.get(
+    response = musicbrainz_request(
         f"{BASE_URL}/release/{release_id}",
         params={
             "inc": "recordings",
             "fmt": "json",
         },
-        headers=HEADERS,
         timeout=10,
     )
 
